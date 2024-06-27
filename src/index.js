@@ -13,13 +13,19 @@ const config = {
 
 const requestAirdrop = async (address) => {
     return await axios.post(config.api_url, {
-        lamports: 2 * 10 ** 9,
+        lamports: 50 * 10 ** 9,
         to_wallet_address: address
     }, {
         headers: {
             'auth_token': config.auth_token
         }
-    }).catch(() => null)
+    }).then(res => {
+        console.log(res)
+        return res
+    }).catch((err) => {
+        console.log(err)
+        return err
+    })
 }
 
 const client = new Discord.Client({ intents: [
