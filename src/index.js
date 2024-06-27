@@ -13,7 +13,7 @@ const config = {
 
 const requestAirdrop = async (address) => {
     return await axios.post(config.api_url, {
-        lamports: 50 * 10 ** 9,
+        lamports: 2 * 10 ** 9,
         to_wallet_address: address
     }, {
         headers: {
