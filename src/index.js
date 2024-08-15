@@ -29,7 +29,7 @@ const requestBtcAirdrop = async (address) => {
 }
 
 const requestYonaAirdrop = async (address) => {
-    return await axios.post(config.btc_api_url, {
+    return await axios.post(config.api_url, {
         lamports: 5 * 10 ** 9,
         to_wallet_address: address
     }, {
