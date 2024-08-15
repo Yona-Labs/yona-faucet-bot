@@ -1,19 +1,36 @@
 const Discord = require('discord.js');
-const { PublicKey } = require('@solana/web3.js');
-const axios = require('axios')
-const express = require("express")
+const {PublicKey} = require('@solana/web3.js');
+const axios = require('axios');
+const express = require("express");
+const bitcoin = require('bitcoinjs-lib');
 
 require('dotenv').config()
 
 const config = {
     token: process.env.TOKEN,
     api_url: process.env.API_URL,
-    auth_token: process.env.BACKEND_AUTH_TOKEN
+    auth_token: process.env.BACKEND_AUTH_TOKEN,
+    btc_api_url: process.env.BTC_API_URL
 }
 
-const requestAirdrop = async (address) => {
-    return await axios.post(config.api_url, {
-        lamports: 2 * 10 ** 9,
+const requestBtcAirdrop = async (address) => {
+    return await axios.get(config.btc_api_url, {
+        params: {address},
+        headers: {
+            'auth_token': config.auth_token
+        }
+    }).then(res => {
+        console.log(res)
+        return res
+    }).catch((err) => {
+        console.log(err)
+        return err
+    })
+}
+
+const requestYonaAirdrop = async (address) => {
+    return await axios.post(config.btc_api_url, {
+        lamports: 5 * 10 ** 9,
         to_wallet_address: address
     }, {
         headers: {
@@ -28,11 +45,13 @@ const requestAirdrop = async (address) => {
     })
 }
 
-const client = new Discord.Client({ intents: [
-    Discord.GatewayIntentBits.Guilds, 
-    Discord.GatewayIntentBits.GuildMessages,
-    Discord.GatewayIntentBits.MessageContent,
-]});
+const client = new Discord.Client({
+    intents: [
+        Discord.GatewayIntentBits.Guilds,
+        Discord.GatewayIntentBits.GuildMessages,
+        Discord.GatewayIntentBits.MessageContent,
+    ]
+});
 
 client.once('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -50,17 +69,30 @@ client.on('messageCreate', async message => {
         const address = parts[1]; // Extract the address from the message
 
         // Check if the provided address is a valid Solana address
-        try {
-            new PublicKey(address); // This will throw an error if the address is invalid
-
+        if (address.startsWith('bcrt1')) {
             try {
-                requestAirdrop(address)
-            } catch {}
+                bitcoin.address.fromBech32(address);
+                await requestBtcAirdrop(address);
+                await message.reply(`Address ${address} will receive 5 BTC on Bitcoin testnet!`);
+            } catch (error) {
+                await message.reply(`The address ${address} is not a valid Bitcoin address.`);
+                await message.delete();
+            }
+        } else {
+            try {
 
-            await message.reply(`Address ${address} will receive 2 BTC!`);
-        } catch (error) {
-            await message.reply(`The address ${address} is not a valid Yona address.`);
-            await message.delete();
+                new PublicKey(address); // This will throw an error if the address is invalid
+
+                try {
+                    await requestYonaAirdrop(address)
+                } catch {
+                }
+
+                await message.reply(`Address ${address} will receive 5 BTC on Yona testnet!`);
+            } catch (error) {
+                await message.reply(`The address ${address} is not a valid Yona address.`);
+                await message.delete();
+            }
         }
     } else {
         // If the message does not follow the format, inform and delete it
